@@ -84,5 +84,59 @@ import numpy as np
 # print(data)
 
 
-data = pd.DataFrame(np.arange(12).reshape((3,4)), index = ['Ohio', 'Colorado', 'New York'], columns = ['one', 'two', 'three', 'four'])
-print(data)
+# data = pd.DataFrame(np.arange(12).reshape((3,4)), index = ['Ohio', 'Colorado', 'New York'], columns = ['one', 'two', 'three', 'four'])
+# print(data)
+
+# # Using rename function
+# data.rename(index = {'Ohio': 'SanF'}, columns = {'one': 'one_p', 'two': 'two_p'}, inplace=True)
+# print(data)
+
+# # Can also use string functions
+# data.rename(index = str.upper, columns =str.title, inplace = True )
+# print(data)
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# Categorize
+ages = [20, 22, 25, 27, 21, 23, 37, 31, 61, 45, 41, 32]
+# We'll divide the ages into bins such as 18-25, 26-35,36-60 and 60 and above.
+bins = [18, 25, 35, 60, 100]
+cats = pd.cut(ages, bins)
+print(cats)
+
+#To include the right bin value, we can do:
+print(pd.cut(ages, bins, right=False))
+
+#pandas library intrinsically assigns an encoding to categorical variables.
+# print(cats.lables)
+
+#Let's check how many observations fall under each bin
+print(pd.value_counts(cats))
+
+bin_names = ['Youth', 'YoungAdult', 'MiddleAge', 'Senior']
+new_cats = pd.cut(ages, bins, labels = bin_names)
+print(pd.value_counts(new_cats))
+
+# We can also calculate cumulative sums
+print()
+print(pd.value_counts(new_cats).cumsum())
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+#  Grouping data and creating pivots in pandas
+
+df = pd.DataFrame({
+    'key1': ['a', 'a', 'b', 'b', 'a'],
+    'key2': ['one', 'two', 'one', 'two', 'one'],
+    'data1': np.random.randn(5),
+    'data2': np.random.randn(5) })
+print(df)
+
+print("")
+# calculate the mean of data1 column by key1
+grouped = df['data1'].groupby(df['key1'])
+print(grouped.mean())
+
+#  Slice the data frame
+
+
