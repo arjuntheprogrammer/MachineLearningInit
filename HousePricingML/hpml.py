@@ -402,7 +402,7 @@ skewed = skewed[skewed > 0.75]
 skewed = skewed.index
 train_new[skewed] = np.log1p(train_new[skewed])
 test_new[skewed] = np.log1p(test_new[skewed])
-del test_new["SakePrice"]
+del test_new["SalePrice"]
 
 # Now, we'll standardize the numeric features.
 from sklearn.preprocessing import StandardScaler
@@ -427,7 +427,226 @@ def onehot(onehot_df, df, column_name, fill_na):
     
     dummies = pd.get_dummies(onehot_df[column_name], prefix="_"+column_name)
     onehot_df = onehot_df.join(dummies)
-    onshot_df = onehot_df.drop([column_name], axis = 1)
+    onehot_df = onehot_df.drop([column_name], axis = 1)
     return onehot_df
 
 
+def munge_onehot(df):
+    onehot_df = pd.DataFrame(index=df.index)
+    
+    onehot_df = onehot(onehot_df, df, "MSSubClass", None)
+    onehot_df = onehot(onehot_df, df, "MSZoning", "RL")
+    onehot_df = onehot(onehot_df, df, "LotConfig", None)
+    onehot_df = onehot(onehot_df, df, "Neighborhood", None)
+    onehot_df = onehot(onehot_df, df, "Condition1", None)
+    onehot_df = onehot(onehot_df, df, "BldgType", None)
+    onehot_df = onehot(onehot_df, df, "HouseStyle", None)
+    onehot_df = onehot(onehot_df, df, "RoofStyle", None)
+    onehot_df = onehot(onehot_df, df, "Exterior1st", "VinylSd")
+    onehot_df = onehot(onehot_df, df, "Exterior2nd", "VinylSd")
+    onehot_df = onehot(onehot_df, df, "Foundation", None)
+    onehot_df = onehot(onehot_df, df, "SaleType", "WD")
+    onehot_df = onehot(onehot_df, df, "SaleCondition", "Normal")
+
+    #Fill in missing MasVnrType for rows that do have a MasVnrArea.
+    temp_df = df[["MasVnrType", "MasVnrArea"]].copy()
+    idx = (df["MasVnrArea"] != 0) & ((df["MasVnrType"] == "None") | (df["MasVnrType"].isnull()))
+    temp_df.loc[idx, "MasVnrType"] = "BrkFace"
+    onehot_df = onehot(onehot_df, temp_df, "MasVnrType", "None")
+
+    onehot_df = onehot(onehot_df, df, "LotShape", None)
+    onehot_df = onehot(onehot_df, df, "LandContour", None)
+    onehot_df = onehot(onehot_df, df, "LandSlope", None)
+    onehot_df = onehot(onehot_df, df, "Electrical", "SBrkr")
+    onehot_df = onehot(onehot_df, df, "GarageType", "None")
+    onehot_df = onehot(onehot_df, df, "PavedDrive", None)
+    onehot_df = onehot(onehot_df, df, "MiscFeature", "None")
+    onehot_df = onehot(onehot_df, df, "Street", None)
+    onehot_df = onehot(onehot_df, df, "Alley", "None")
+    onehot_df = onehot(onehot_df, df, "Condition2", None)
+    onehot_df = onehot(onehot_df, df, "RoofMatl", None)
+    onehot_df = onehot(onehot_df, df, "Heating", None)
+
+    # we'll have these as numerical variables too
+    onehot_df = onehot(onehot_df, df, "ExterQual", "None")
+    onehot_df = onehot(onehot_df, df, "ExterCond", "None")
+    onehot_df = onehot(onehot_df, df, "BsmtQual", "None")
+    onehot_df = onehot(onehot_df, df, "BsmtCond", "None")
+    onehot_df = onehot(onehot_df, df, "HeatingQC", "None")
+    onehot_df = onehot(onehot_df, df, "KitchenQual", "TA")
+    onehot_df = onehot(onehot_df, df, "FireplaceQu", "None")
+    onehot_df = onehot(onehot_df, df, "GarageQual", "None")
+    onehot_df = onehot(onehot_df, df, "GarageCond", "None")
+    onehot_df = onehot(onehot_df, df, "PoolQC", "None")
+    onehot_df = onehot(onehot_df, df, "BsmtExposure", "None")
+    onehot_df = onehot(onehot_df, df, "BsmtFinType1", "None")
+    onehot_df = onehot(onehot_df, df, "BsmtFinType2", "None")
+    onehot_df = onehot(onehot_df, df, "Functional", "Typ")
+    onehot_df = onehot(onehot_df, df, "GarageFinish", "None")
+    onehot_df = onehot(onehot_df, df, "Fence", "None")
+    onehot_df = onehot(onehot_df, df, "MoSold", None)
+
+    # Divide  the years between 1871 and 2010 into slices of 20 years
+    year_map = pd.concat(pd.Series("YearBin" + str(i+1), index=range(1871+i*20, 1891+i*20)) for i in range(0, 7))
+    yearbin_df = pd.DataFrame(index=df.index)
+    yearbin_df["GarageYrBltBin"] = df.GarageYrBlt.map(year_map)
+    yearbin_df["GarageYrBltBin"].fillna("NoGarage", inplace=True)
+    yearbin_df["YearBuiltBin"] = df.YearBuilt.map(year_map)
+    yearbin_df["YearRemodAddBin"] = df.YearRemodAdd.map(year_map)
+
+    onehot_df = onehot(onehot_df, yearbin_df, "GarageYrBltBin", None)
+    onehot_df = onehot(onehot_df, yearbin_df, "YearBuiltBin", None)
+    onehot_df = onehot(onehot_df, yearbin_df, "YearRemodAddBin", None)
+    return onehot_df
+
+# create one-hot features
+onehot_df = munge_onehot(train)
+
+neighborhood_train = pd.DataFrame(index = train_new.shape)
+neighborhood_train['NeighborhoodBin'] = train_new['NeighborhoodBin']
+neighborhood_test = pd.DataFrame(index = test_new.shape)
+neighborhood_test['NeighborhoodBin'] = test_new['NeighborhoodBin']
+
+onehot_df = onehot(onehot_df, neighborhood_train, 'NeighborhoodBin', None)
+
+train_new = train_new.join(onehot_df)
+
+print(train_new.shape)
+
+#adding one hot features to test
+onehot_df_te = munge_onehot(test)
+onehot_df_te = onehot(onehot_df_te, neighborhood_test, "NeighborhoodBin", None)
+test_new = test_new.join(onehot_df_te)
+print(test_new.shape)
+
+#dropping some columns from the train data as they are not found in test
+drop_cols = ["_Exterior1st_ImStucc", "_Exterior1st_Stone", "_Exterior2nd_Other", "_HouseStyle_2.5Fin", "_RoofMatl_Membran", "_RoofMatl_Metal", "_RoofMatl_Roll",
+             "_Condition2_RRAe", "_Condition2_RRAn", "_Condition2_RRNn", "_Heating_Floor", "_Heating_OthW", "_Electrical_Mix", "_MiscFeature_TenC", "_GarageQual_Ex",  "_PoolQC_Fa"]
+train_new.drop(drop_cols, axis=1, inplace=True)
+print(train_new.shape)
+
+#removing one column missing from train data
+test_new.drop(["_MSSubClass_150"], axis=1, inplace=True)
+
+# Drop these columns
+drop_cols = ["_Condition2_PosN",  # only two are not zero
+             "_MSZoning_C (all)",
+             "_MSSubClass_160"]
+
+train_new.drop(drop_cols, axis=1, inplace=True)
+test_new.drop(drop_cols, axis=1, inplace=True)
+
+# transform the target variable and store it in a new array.
+#create a label set
+label_df = pd.DataFrame(index=train_new.index, columns=['SalePrice'])
+label_df['SalePrice'] = np.log(train['SalePrice'])
+print("Training set size:", train_new.shape)
+print("Test set size:", test_new.shape)
+
+
+# #######################################################################################
+# Model Training and Evaluation
+
+
+import xgboost as xgb
+regr = xgb.XGBRegressor(
+    colsample_bytree = 0.2,
+    gamma = 0.0,
+    learning_rate = 0.05, 
+    max_dept=6,
+    min_child_weight = 1.5,
+    n_estimators = 7200, 
+    reg_alpha = 0.9,
+    reg_lambda = 0.6,
+    subsample =0.2,
+    seed =  42,
+    silent = 1
+)
+regr.fit(train_new, label_df)
+
+# To evaluate the model's performance, we'll create a quick RMSE function.
+from sklearn.metrics import mean_squared_error
+
+def rmse(y_test, y_pred):
+    return np.sqrt(mean_squared_error(y_test, y_pred))
+
+# run predictinon on training set to get an idea of how well it does
+y_pred = regr.predict(train_new)
+y_test = label_df
+
+print("XGBoost score on training set: ", rmse(y_test, y_pred))
+
+
+# make prediction on test set
+y_pred_xgb = regr.predict(test_new_one)
+
+#submit this prediction and get the score
+pred1 = pd.DataFrame({'Id': test['Id'], 'SalePrice': np.exp(y_pred_xgb)})
+pred1.to_csv('xgbnono.csv', header=True, index=False)
+
+
+from sklearn.linear_model import Lasso
+
+#found this best alpha through cross-validation
+best_alpha = 0.00099
+
+regr = Lasso(alpha=best_alpha, max_iter=50000)
+regr.fit(train_new, label_df)
+
+# run prediction on the training set to get a rough idea of how well it does
+y_pred = regr.predict(train_new)
+y_test = label_df
+print("Lasso score on training set: ", rmse(y_test, y_pred))
+
+
+#make prediction on the test set
+y_pred_lasso = regr.predict(test_new_one)
+lasso_ex = np.exp(y_pred_lasso)
+pred1 = pd.DataFrame({'Id': test['Id'], 'SalePrice': lasso_ex})
+pred1.to_csv('lasso_model.csv', header=True, index=False)
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.wrappers.scikit_learn import KerasRegressor
+from sklearn.preprocessing import StandardScaler
+
+np.random.seed(10)
+
+#create Model
+#define base model
+
+
+def base_model():
+     model = Sequential()
+     model.add(Dense(20, input_dim=398, init='normal', activation='relu'))
+     model.add(Dense(10, init='normal', activation='relu'))
+     model.add(Dense(1, init='normal'))
+     model.compile(loss='mean_squared_error', optimizer='adam')
+     return model
+
+
+seed = 7
+np.random.seed(seed)
+
+scale = StandardScaler()
+X_train = scale.fit_transform(train_new)
+X_test = scale.fit_transform(test_new)
+
+keras_label = label_df.as_matrix()
+clf = KerasRegressor(build_fn=base_model, nb_epoch=1000,
+                     batch_size=5, verbose=0)
+clf.fit(X_train, keras_label)
+
+#make predictions and create the submission file
+kpred = clf.predict(X_test)
+kpred = np.exp(kpred)
+pred_df = pd.DataFrame(kpred, index=test["Id"], columns=["SalePrice"])
+pred_df.to_csv('keras1.csv', header=True, index_label='Id')
+
+
+#simple average
+y_pred = (y_pred_xgb + y_pred_lasso) / 2
+y_pred = np.exp(y_pred)
+pred_df = pd.DataFrame(y_pred, index=test["Id"], columns=["SalePrice"])
+pred_df.to_csv('ensemble1.csv', header=True, index_label='Id')
